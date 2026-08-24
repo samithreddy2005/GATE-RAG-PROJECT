@@ -1,0 +1,126 @@
+ Computer Science and Information Technology (CS) 
+Page 1 of 7
+Organizing Institute: IIT Kanpur
+General Aptitude (GA)
+– Q.5 Carry ONE mark Each
+Q.1 We reached the station late, and _______ missed the train.
+(A) near
+(B) nearly
+(C) utterly 
+(D) mostly
+Q.2 Kind : _______ : : Often : Frequently
+(By word meaning)
+(A) Mean
+(B) Type
+(C) Cruel
+(D) Kindly
+Q.1
+ Computer Science and Information Technology (CS) 
+Page 2 of 7
+Organizing Institute: IIT Kanpur
+Q.3 A series of natural numbers F1, F2, F3, F4, F5, F6, F7, ... obeys Fn+1 = Fn + Fn-1
+for all integers n >= 2 .
+If F6 = 37, and F7 = 60, then what is F1 ?
+(A) 4
+(B) 5
+(C) 8
+(D) 9
+ Computer Science and Information Technology (CS) 
+Page 3 of 7
+Organizing Institute: IIT Kanpur
+Q.4 A survey for a certain year found that 90% of pregnant women received medical
+care at least once before giving birth. Of these women, 60% received medical care 
+from doctors, while 40% received medical care from other healthcare providers.
+Given this information, which one of the following statements can be inferred with 
+certainty? 
+(A) More than half of the pregnant women received medical care at least once from a 
+doctor.
+(B) Less than half of the pregnant women received medical care at least once from a 
+doctor.
+(C) More than half of the pregnant women received medical care at most once from a 
+doctor.
+(D) Less than half of the pregnant women received medical care at most once from a 
+doctor.
+Q.5 Looking at the surface of a smooth 3-dimensional object from the outside, which 
+one of the following options is TRUE?
+(A) The surface of the object must be concave everywhere.
+(B) The surface of the object must be convex everywhere.
+(C) The surface of the object may be concave in some places and convex in other places.
+(D) The object can have edges, but no corners.
+Q.6 - Q.10 Carry TWO marks Each
+Q.6 The country of Zombieland is in distress since more than 75% of its working 
+population is suffering from serious health issues. Studies conducted by competent 
+health experts concluded that a complete lack of physical exercise among its 
+working population was one of the leading causes of their health issues. As one of 
+the measures to address the problem, the Government of Zombieland has decided 
+to provide monetary incentives to those who ride bicycles to work. 
+Based only on the information provided above, which one of the following 
+statements can be logically inferred with certainty?
+(A) All the working population of Zombieland will henceforth ride bicycles to work.
+(B) Riding bicycles will ensure that all of the working population of Zombieland is free 
+of health issues.
+(C) The health experts suggested to the Government of Zombieland to declare riding 
+bicycles as mandatory.
+(D) The Government of Zombieland believes that riding bicycles is a form of physical 
+exercise.
+Q.11 - Q.35 Carry ONE mark each.
+Q.11
+Which one of the following sequences when stored in an array at locations
+A[1],...,A[10] forms a max-heap?
+(A) 23, 17, 10, 6, 13, 14, 1, 5, 7, 12
+(B) 23, 17, 14, 7, 13, 10, 1, 5, 6, 12
+(C) 23, 17, 14, 6, 13, 10, 1, 5, 7, 15
+(D) 23, 14, 17, 1, 10, 13, 16, 12, 7, 5
+Q.12
+Let SLLdel be a function that deletes a node in a singly-linked list given a pointer
+to the node and a pointer to the head of the list. Similarly, let DLLdel be another
+function that deletes a node in a doubly-linked list given a pointer to the node and
+a pointer to the head of the list.
+Let n denote the number of nodes in each of the linked lists. Which one of the
+following choices is TRUE about the worst-case time complexity of SLLdel and
+DLLdel?
+(A) SLLdel is O(1) and DLLdel is O(n)
+(B) Both SLLdel and DLLdel are O(log(n))
+(C) Both SLLdel and DLLdel are O(1)
+(D) SLLdel is O(n) and DLLdel is O(1)
+Q.14
+The Lucas sequence Ln is defined by the recurrence relation:
+Ln = Ln-1 + Ln-2, for n >= 3, with L1 = 1 and L2 = 3.
+Which one of the options given is TRUE?
+(A) A closed form using golden-ratio-like terms, sum variant
+(B) A closed form using golden-ratio-like terms, sum-with-power-3 variant
+(C) A closed form using golden-ratio-like terms, alternate sum-with-power-3 variant
+(D) A closed form using golden-ratio-like terms, difference variant
+Q.15
+Which one of the options given below refers to the degree (or arity) of a relation in
+relational database systems?
+(A) Number of attributes of its relation schema.
+(B) Number of tuples stored in the relation.
+(C) Number of entries in the relation.
+(D) Number of distinct domains of its relation schema.
+Q.21
+Which one or more of the following need to be saved on a context switch from one
+thread (T1) of a process to another thread (T2) of the same process?
+(A) Page table base register
+(B) Stack pointer
+(C) Program counter
+(D) General purpose registers
+Q.55
+Let U = {1, 2, 3}. Let 2U denote the powerset of U. Consider an undirected graph
+G whose vertex set is 2U . For any A, B in 2U, (A, B) is an edge in G if and only
+if (i) A != B, and (ii) either A is a subset of B or B is a subset of A. For any vertex A in G, the set of
+all possible orderings in which the vertices of G can be visited in a Breadth First
+Search (BFS) starting from A is denoted by B(A).
+If the empty set is denoted by phi, then the cardinality of B(phi) is ____.
+Q.60
+Consider the following table named Student in a relational database. The primary
+key of this table is rollNum.
+Student table: rollNum, name, gender, marks
+1 Naman M 62
+2 Aliya F 70
+3 Aliya F 80
+4 James M 82
+5 Swati F 65
+The SQL query below is executed on this database.
+SELECT * FROM Student WHERE gender = 'F' AND marks > 65;
+The number of rows returned by the query is ____.

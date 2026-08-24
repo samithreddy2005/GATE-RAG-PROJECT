@@ -1,0 +1,16 @@
+# Secrets — never commit API keys
+.env
+*.env
+
+# Virtualenv
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Local index / vector store artifacts
+rag-project/storage/
+rag-project/data/uploaded/

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RAG Assistant</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 720px; margin: 40px auto; background:#f7f7f5; color:#222; }
+  #chat { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+  .msg { padding:12px 16px; border-radius:10px; line-height:1.5; }
+  .user { background:#dde7f5; align-self:flex-end; }
+  .bot { background:#fff; border:1px solid #e0e0dc; }
+  .sources { font-size:12px; color:#666; margin-top:8px; border-top:1px solid #eee; padding-top:8px; }
+  .source-item { margin:4px 0; }
+  #inputRow { display:flex; gap:8px; }
+  #question { flex:1; padding:10px; border-radius:8px; border:1px solid #ccc; }
+  button { padding:10px 16px; border-radius:8px; border:none; background:#2a2a28; color:#fff; cursor:pointer; }
+  #status { font-size:12px; color:#888; margin-bottom:12px; }
+</style>
+</head>
+<body>
+<h2>Real-time RAG assistant</h2>
+<div id="status">Checking index status...</div>
+<div id="chat"></div>
+<div id="inputRow">
+  <input id="question" placeholder="Ask a question about the indexed documents..." />
+  <button onclick="ask()">Send</button>
+</div>
+
+<script>
+// Empty = same origin, since FastAPI now serves this page itself.
+// Falls back to the dev server if the page is opened directly via file://.
+const API_BASE = location.protocol === "file:" ? "http://localhost:8000" : "";
+const chat = document.getElementById("chat");
+const statusEl = document.getElementById("status");
+
+async function refreshStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/status`);
+    const data = await res.json();
+    statusEl.textContent = `Indexed chunks: ${data.indexed_chunks}`;
+  } catch {
+    statusEl.textContent = "Backend not reachable at " + API_BASE;
+  }
+}
+refreshStatus();
+
+function addMessage(role, text) {
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+async function ask() {
+  const input = document.getElementById("question");
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = "";
+  addMessage("user", question);
+
+  const botDiv = addMessage("bot", "");
+  let answerText = "";
+  const sourcesDiv = document.createElement("div");
+  sourcesDiv.className = "sources";
+  botDiv.appendChild(document.createElement("br"));
+
+  const res = await fetch(`${API_BASE}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const payload = JSON.parse(line.slice(6));
+      if (payload.type === "sources") {
+        sourcesDiv.innerHTML = "<b>Sources</b><br>" + payload.sources
+          .map(s => `<div class="source-item">[${s.index}] ${s.source}: ${s.preview}...</div>`)
+          .join("");
+      } else if (payload.type === "token") {
+        answerText += payload.text;
+        botDiv.textContent = answerText;
+        botDiv.appendChild(sourcesDiv);
+      } else if (payload.type === "error") {
+        botDiv.textContent = payload.text;
+      }
+    }
+  }
+}
+
+document.getElementById("question").addEventListener("keydown", e => {
+  if (e.key === "Enter") ask();
+});
+</script>
+</body>
+</html>

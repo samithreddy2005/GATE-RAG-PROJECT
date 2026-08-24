@@ -1,0 +1,13 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+scikit-learn==1.5.2
+numpy==1.26.4
+scipy==1.14.1
+rank-bm25==0.2.2
+chromadb==0.5.5
+posthog==3.7.0  # chromadb 0.5.5 uses the pre-4.x posthog.capture() signature
+groq==1.6.0
+python-dotenv==1.2.3
+pypdf==4.3.1
+python-multipart==0.0.9
