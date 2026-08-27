@@ -79,3 +79,20 @@ def test_parse_final_answer_takes_the_last_occurrence():
         "FINAL ANSWER: C"
     )
     assert parse_final_answer(text) == "C"
+
+
+def test_a_prose_final_answer_is_treated_as_no_answer():
+    """The correction pass explicitly invites the model to dispute the key,
+    and it sometimes answers with a sentence. Collapsing that to a
+    space-free token produced an unreadable pseudo-answer; it must be
+    rejected as "no answer given", which is what it is."""
+    text = ("FINAL ANSWER: (the official key is mistaken; the edge can be "
+            "either a tree edge or a back edge, so no single option is "
+            "uniquely correct)")
+    assert parse_final_answer(text) == ""
+
+
+def test_a_long_but_legitimate_msq_answer_still_parses():
+    """The length guard must not reject a real answer."""
+    assert parse_final_answer("FINAL ANSWER: A,B,C,D") == "A,B,C,D"
+    assert parse_final_answer("FINAL ANSWER: 123456.789") == "123456.789"

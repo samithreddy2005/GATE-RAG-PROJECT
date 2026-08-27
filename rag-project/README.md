@@ -87,17 +87,24 @@ confident, wrong answer.
 
 | Metric | Result |
 |---|---|
-| verified@1 — correct on the first derivation | 58.3% |
+| verified@1 — correct on the first derivation | 66.7% |
 | verified@2 — correct only after the correction retry | 16.7% |
-| **total verified against the official key** | **75.0%** |
-| unverified — shown with an explicit warning | 25.0% |
+| **total verified against the official key** | **83.4%** |
+| unverified — shown with an explicit warning | 16.7% |
 | truncated / errors | 0 |
-| median latency | 11.8 s |
-| by type | MCQ 8/9 (89%), NAT 1/3 (33%) |
+| median latency | 16.7 s |
+| by type | MCQ 7/9 (78%), NAT 3/3 (100%) |
 
-The gap between MCQ and NAT is real and expected: NAT questions in this
-corpus depend on figures and tables that plain-text PDF extraction does not
-capture (see Limitations).
+**Read this number with its error bars.** Sampling is seeded and
+reproducible, but generation is not: the same seed on the same corpus
+produced **75.0%** and **83.4%** on two runs. At n = 12 a single question
+moves the headline by 8 points, so treat this as "roughly four in five" and
+raise `-n` before drawing conclusions from a change. Both runs agreed on the
+one genuinely hard failure, DA 2024 Q.46 (deriving which functional
+dependencies follow from a given set).
+
+The two runs differ mostly because the corpus itself improved between them —
+CS 2023 Q.60 started passing once its answer key was corrected (below).
 
 ---
 
@@ -167,7 +174,7 @@ only the generated explanations need one.
 
 ```bash
 python -m app.build_index          # rebuild the index, print integrity warnings
-python -m pytest                   # 102 tests
+python -m pytest                   # 104 tests
 python -m eval.run_eval --retrieval    # offline, no API key needed
 python -m eval.run_eval --generation -n 12 --seed 7
 python -m eval.run_eval --all --json eval/results.json
@@ -243,10 +250,13 @@ Stated plainly, because they bound what the numbers above mean.
   The pipeline handles full papers — the text extraction simply is not
   complete yet.
 - **Figures and tables are lost.** Plain-text extraction drops Bayesian
-  network diagrams, geometry figures and some data tables. Questions that
-  depend on them cannot be solved from the indexed text, which is most of the
-  NAT failure rate above. Detecting and excluding figure-dependent questions
-  would make the metric more honest still.
+  network diagrams, geometry figures and some data tables. DA 2024 Q.64 gives
+  its conditional probability tables only as a figure, so the text alone does
+  not determine the answer — the model reached the right value anyway, which
+  means it reasoned from a default assumption rather than from the data, and
+  a pass on that question should not be read as a solved one. Detecting
+  figure-dependent questions at parse time and excluding them from evaluation
+  would make the headline metric more trustworthy.
 - **The embedder is local TF-IDF + SVD (LSA).** No API key, no model download,
   fully offline — a deliberate trade. It matches on term co-occurrence rather
   than meaning, so it is weaker on paraphrases than a transformer encoder.

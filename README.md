@@ -57,12 +57,14 @@ the generated explanations need one.
 |---|---|
 | Retrieval recall@1 (20 hand-authored student queries) | 87.5% |
 | Off-topic queries correctly refused | 100% |
-| Explanations verified against the official key | 75.0% |
-| Tests | 102 passing |
+| Explanations verified against the official key | ~83% (see caveat) |
+| Tests | 104 passing |
 
 Reproduce with `python -m pytest` and `python -m eval.run_eval --all`.
-Method, caveats and what these numbers do *not* cover are in the
-[project README](rag-project/README.md).
+Retrieval numbers are deterministic; the generation number is not — the same
+seed gave 75.0% and 83.4% on two runs of 12 questions, so read it as "roughly
+four in five". Method, caveats and what these numbers do *not* cover are in
+the [project README](rag-project/README.md).
 
 ## Layout
 
@@ -76,7 +78,7 @@ Method, caveats and what these numbers do *not* cover are in the
 | [`app/main.py`](rag-project/app/main.py) | FastAPI server and streaming endpoints |
 | [`data/concepts/`](rag-project/data/concepts/) | Concept notes that ground the *why* |
 | [`eval/run_eval.py`](rag-project/eval/run_eval.py) | Retrieval and generation benchmarks |
-| [`tests/`](rag-project/tests/) | 102 tests |
+| [`tests/`](rag-project/tests/) | 104 tests |
 
 ## Notes
 

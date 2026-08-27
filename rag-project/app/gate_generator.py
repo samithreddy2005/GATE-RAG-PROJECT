@@ -129,6 +129,16 @@ def build_prompt(q: GateQuestion, concept_context: str = "",
     return "\n\n".join(parts)
 
 
+# No legitimate GATE answer is long: a letter, a few comma-separated
+# letters, or a number. Anything longer is prose, which happens when the
+# correction pass is invited to dispute the key and answers with a sentence
+# ("the official key is mistaken; the edge could be either..."). Collapsing
+# that to a single space-free token produced an unreadable pseudo-answer in
+# the evaluation output, so it is rejected as "no answer given" instead --
+# which is what it actually is.
+MAX_ANSWER_LEN = 40
+
+
 def parse_final_answer(text: str) -> str:
     """Take the *last* FINAL ANSWER line. Models sometimes restate the
     format mid-explanation; the concluding line is the real one."""
@@ -138,7 +148,8 @@ def parse_final_answer(text: str) -> str:
     answer = matches[-1].strip().upper()
     # Strip trailing prose and markdown emphasis the model may append.
     answer = re.sub(r"[*_`]", "", answer).strip().rstrip(".")
-    return answer.replace(" ", "")
+    answer = answer.replace(" ", "")
+    return answer if len(answer) <= MAX_ANSWER_LEN else ""
 
 
 def answers_match(derived: str, official: str) -> bool:
