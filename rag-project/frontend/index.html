@@ -2,107 +2,582 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>RAG Assistant</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GATE Prep Assistant</title>
 <style>
-  body { font-family: -apple-system, sans-serif; max-width: 720px; margin: 40px auto; background:#f7f7f5; color:#222; }
-  #chat { display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
-  .msg { padding:12px 16px; border-radius:10px; line-height:1.5; }
-  .user { background:#dde7f5; align-self:flex-end; }
-  .bot { background:#fff; border:1px solid #e0e0dc; }
-  .sources { font-size:12px; color:#666; margin-top:8px; border-top:1px solid #eee; padding-top:8px; }
-  .source-item { margin:4px 0; }
-  #inputRow { display:flex; gap:8px; }
-  #question { flex:1; padding:10px; border-radius:8px; border:1px solid #ccc; }
-  button { padding:10px 16px; border-radius:8px; border:none; background:#2a2a28; color:#fff; cursor:pointer; }
-  #status { font-size:12px; color:#888; margin-bottom:12px; }
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --ink: #1c1f23;
+    --muted: #6b7280;
+    --line: #e3e6ea;
+    --accent: #1f6feb;
+    --ok: #1a7f45;
+    --ok-bg: #e7f5ec;
+    --warn: #a15c00;
+    --warn-bg: #fdf3e2;
+    --bad: #b42318;
+    --bad-bg: #fdeceb;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a; --panel: #1c2025; --ink: #e6e9ed; --muted: #9aa4b2;
+      --line: #2c3238; --accent: #4d94ff;
+      --ok: #6ee7a5; --ok-bg: #14301f; --warn: #f0c07a; --warn-bg: #33260f;
+      --bad: #ff9c94; --bad-bg: #351a18;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    background: var(--panel); border-bottom: 1px solid var(--line);
+    padding: 14px 20px; position: sticky; top: 0; z-index: 10;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 17px; margin: 0 0 2px; }
+  #status { font-size: 12px; color: var(--muted); }
+  nav { display: flex; gap: 4px; margin-top: 12px; flex-wrap: wrap; }
+  nav button {
+    background: none; border: 1px solid transparent; color: var(--muted);
+    padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 13px;
+  }
+  nav button:hover { color: var(--ink); }
+  nav button.active { background: var(--accent); color: #fff; }
+  main { max-width: 900px; margin: 20px auto; padding: 0 20px 60px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+  }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  select, input, button.action {
+    font: inherit; padding: 7px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  }
+  button.action { background: var(--accent); color: #fff; border-color: transparent; cursor: pointer; }
+  button.action:disabled { opacity: .5; cursor: default; }
+  button.ghost {
+    font: inherit; padding: 6px 10px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: transparent; color: var(--ink);
+  }
+  .meta { font-size: 12px; color: var(--muted); }
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  .tag {
+    font-size: 11px; padding: 2px 7px; border-radius: 999px;
+    background: var(--bg); border: 1px solid var(--line); color: var(--muted);
+  }
+  .stem { white-space: pre-wrap; margin: 10px 0; }
+  .opt { display: block; margin: 5px 0; cursor: pointer; }
+  .opt input { margin-right: 8px; }
+  .badge {
+    display: inline-block; font-size: 12px; font-weight: 600;
+    padding: 3px 9px; border-radius: 999px; margin-right: 8px;
+  }
+  .badge.ok   { background: var(--ok-bg);   color: var(--ok); }
+  .badge.warn { background: var(--warn-bg); color: var(--warn); }
+  .badge.bad  { background: var(--bad-bg);  color: var(--bad); }
+  .result { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+  .result.ok  { background: var(--ok-bg); }
+  .result.bad { background: var(--bad-bg); }
+  .explanation {
+    white-space: pre-wrap; margin-top: 10px; padding-top: 10px;
+    border-top: 1px solid var(--line); font-size: 14px;
+  }
+  .sources { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .sources li { margin: 3px 0; }
+  .bar { height: 7px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .msg { padding: 11px 14px; border-radius: 10px; margin-bottom: 10px; white-space: pre-wrap; }
+  .msg.user { background: var(--accent); color: #fff; margin-left: 15%; }
+  .msg.bot  { background: var(--bg); border: 1px solid var(--line); }
+  .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+  .hidden { display: none; }
+  .scorebar { display: flex; gap: 16px; font-size: 13px; }
+  .scorebar b { font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
-<h2>Real-time RAG assistant</h2>
-<div id="status">Checking index status...</div>
-<div id="chat"></div>
-<div id="inputRow">
-  <input id="question" placeholder="Ask a question about the indexed documents..." />
-  <button onclick="ask()">Send</button>
-</div>
+
+<header>
+  <div class="wrap">
+    <h1>GATE Prep Assistant</h1>
+    <div id="status">Checking index…</div>
+    <nav>
+      <button data-tab="practice" class="active">Practice</button>
+      <button data-tab="browse">Browse</button>
+      <button data-tab="ask">Ask a doubt</button>
+      <button data-tab="analytics">Analytics</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ------------------------------------------------------ PRACTICE -->
+  <section id="tab-practice">
+    <div class="panel">
+      <div class="controls">
+        <select id="p-subject"><option value="">All subjects</option></select>
+        <select id="p-topic"><option value="">All topics</option></select>
+        <select id="p-type">
+          <option value="">All types</option>
+          <option value="MCQ">MCQ</option>
+          <option value="MSQ">MSQ</option>
+          <option value="NAT">NAT</option>
+        </select>
+        <select id="p-count">
+          <option value="5">5 questions</option>
+          <option value="10">10 questions</option>
+          <option value="20">20 questions</option>
+        </select>
+        <button class="action" id="p-start">Start practice set</button>
+      </div>
+      <div class="scorebar" id="p-score" style="margin-top:12px"></div>
+    </div>
+    <div id="p-list"></div>
+  </section>
+
+  <!-- -------------------------------------------------------- BROWSE -->
+  <section id="tab-browse" class="hidden">
+    <div class="panel">
+      <div class="controls">
+        <select id="b-subject"><option value="">All subjects</option></select>
+        <select id="b-topic"><option value="">All topics</option></select>
+        <button class="action" id="b-load">Show questions</button>
+      </div>
+    </div>
+    <div id="b-list"></div>
+  </section>
+
+  <!-- ----------------------------------------------------------- ASK -->
+  <section id="tab-ask" class="hidden">
+    <div class="panel">
+      <div class="meta" style="margin-bottom:10px">
+        Answers are grounded in the indexed past papers and concept notes.
+        If nothing relevant is found, the assistant says so instead of guessing.
+      </div>
+      <div class="controls">
+        <input id="a-input" style="flex:1;min-width:240px"
+               placeholder="e.g. why is every local minimum of a convex function global?">
+        <button class="action" id="a-send">Ask</button>
+      </div>
+    </div>
+    <div id="a-chat"></div>
+  </section>
+
+  <!-- ----------------------------------------------------- ANALYTICS -->
+  <section id="tab-analytics" class="hidden">
+    <div class="panel">
+      <div class="controls">
+        <select id="an-subject"><option value="">All subjects</option></select>
+      </div>
+      <div class="meta" style="margin-top:10px">
+        Topic weight across the indexed papers. Marks share is the more useful
+        column: GATE scores by marks, not by question count.
+      </div>
+    </div>
+    <div class="panel" id="an-table"></div>
+  </section>
+</main>
 
 <script>
-// Empty = same origin, since FastAPI now serves this page itself.
-// Falls back to the dev server if the page is opened directly via file://.
-const API_BASE = location.protocol === "file:" ? "http://localhost:8000" : "";
-const chat = document.getElementById("chat");
-const statusEl = document.getElementById("status");
+"use strict";
+// Same origin when served by FastAPI; falls back to the dev port if this
+// file is opened directly from disk.
+const API = location.protocol === "file:" ? "http://127.0.0.1:8000" : "";
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+};
 
-async function refreshStatus() {
+// The model is asked for plain text, but it still reaches for **bold** and
+// `code` out of habit. Rendering just those two -- after escaping, so model
+// output can never inject markup -- is the difference between a derivation
+// that reads like prose and one littered with asterisks. Applied once when a
+// response completes, not per streamed token.
+function renderLite(target, text) {
+  const escaped = text
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  target.innerHTML = escaped
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`\n]+)`/g, "<code>$1</code>");
+}
+
+async function api(path, options) {
+  const res = await fetch(API + path, options);
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+/* ------------------------------------------------------------- tabs */
+document.querySelectorAll("nav button").forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll("nav button").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    ["practice", "browse", "ask", "analytics"].forEach((t) => {
+      $("tab-" + t).classList.toggle("hidden", t !== btn.dataset.tab);
+    });
+    if (btn.dataset.tab === "analytics") loadAnalytics();
+  };
+});
+
+/* ----------------------------------------------------------- status */
+async function loadStatus() {
   try {
-    const res = await fetch(`${API_BASE}/status`);
-    const data = await res.json();
-    statusEl.textContent = `Indexed chunks: ${data.indexed_chunks}`;
-  } catch {
-    statusEl.textContent = "Backend not reachable at " + API_BASE;
+    const s = await api("/api/status");
+    if (!s.ready) { $("status").textContent = s.detail; return; }
+    $("status").textContent =
+      `${s.indexed_questions} past questions · ${s.indexed_concept_chunks} concept passages · ` +
+      `${s.papers.join(", ")} · model ${s.generation_model}` +
+      (s.generation_configured ? "" : "  ⚠ no API key — explanations disabled");
+    const subjects = (await api("/api/subjects")).subjects;
+    ["p-subject", "b-subject", "an-subject"].forEach((id) => {
+      subjects.forEach((s) => $(id).append(new Option(s, s)));
+    });
+    const topics = (await api("/api/topics")).topics;
+    ["p-topic", "b-topic"].forEach((id) => {
+      topics.forEach((t) => $(id).append(new Option(`${t.topic} (${t.questions})`, t.topic)));
+    });
+  } catch (e) {
+    $("status").textContent = "Backend not reachable — is uvicorn running? " + e.message;
   }
 }
-refreshStatus();
 
-function addMessage(role, text) {
-  const div = document.createElement("div");
-  div.className = `msg ${role}`;
-  div.textContent = text;
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
-  return div;
+/* --------------------------------------------------------- question */
+function renderQuestion(q, { revealed = false } = {}) {
+  const card = el("div", "panel");
+  card.dataset.qid = q.qid;
+
+  const head = el("div", "meta",
+    `GATE ${q.subject} ${q.year} · Q.${q.q_no} · ${q.q_type} · ${q.marks} mark${q.marks > 1 ? "s" : ""}`);
+  card.append(head);
+  card.append(el("div", "stem", q.stem));
+
+  const tags = el("div", "tags");
+  (q.topics || []).forEach((t) => tags.append(el("span", "tag", t)));
+  card.append(tags);
+
+  const answerBox = el("div");
+  answerBox.style.marginTop = "10px";
+  const hasOptions = q.options && Object.keys(q.options).length;
+  const inputType = q.q_type === "MSQ" ? "checkbox" : "radio";
+
+  if (hasOptions) {
+    Object.entries(q.options).sort().forEach(([letter, text]) => {
+      const label = el("label", "opt");
+      const input = el("input");
+      input.type = inputType;
+      input.name = "ans-" + q.qid;
+      input.value = letter;
+      label.append(input, document.createTextNode(`(${letter}) ${text}`));
+      answerBox.append(label);
+    });
+  } else {
+    const input = el("input");
+    input.placeholder = "Numerical answer";
+    input.className = "nat-input";
+    input.style.width = "180px";
+    answerBox.append(input);
+  }
+  card.append(answerBox);
+
+  const actions = el("div", "controls");
+  actions.style.marginTop = "10px";
+  const submit = el("button", "action", "Submit answer");
+  const explain = el("button", "ghost", "Explain this");
+  actions.append(submit, explain);
+  card.append(actions);
+
+  const resultBox = el("div");
+  card.append(resultBox);
+  const explainBox = el("div");
+  card.append(explainBox);
+
+  // Browse mode already has the key (it is a reference view, not a test), so
+  // show it up front. Practice mode never receives it from the server at all.
+  if (revealed && q.official_answer) {
+    const known = el("div", "result ok");
+    known.append(el("span", "badge ok", "Official answer"),
+                 document.createTextNode(q.official_answer));
+    resultBox.append(known);
+  }
+
+  function collectAnswer() {
+    if (hasOptions) {
+      return [...answerBox.querySelectorAll("input:checked")]
+        .map((i) => i.value).sort().join(",");
+    }
+    return answerBox.querySelector(".nat-input").value.trim();
+  }
+
+  submit.onclick = async () => {
+    const answer = collectAnswer();
+    if (!answer) { alert("Choose or type an answer first."); return; }
+    submit.disabled = true;
+    try {
+      const r = await api("/api/attempt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qid: q.qid, answer }),
+      });
+      resultBox.innerHTML = "";
+      const box = el("div", "result " + (r.correct ? "ok" : "bad"));
+      box.append(el("span", "badge " + (r.correct ? "ok" : "bad"),
+        r.correct ? "Correct" : "Incorrect"));
+      box.append(document.createTextNode(
+        `Official answer: ${r.official_answer} · marks ${r.marks_awarded > 0 ? "+" : ""}${r.marks_awarded}`));
+      resultBox.append(box);
+      recordScore(r);
+    } catch (e) {
+      resultBox.textContent = "Could not grade: " + e.message;
+      submit.disabled = false;
+    }
+  };
+
+  explain.onclick = () => {
+    explain.disabled = true;
+    streamExplanation(q.qid, explainBox);
+  };
+
+  return card;
 }
 
-async function ask() {
-  const input = document.getElementById("question");
-  const question = input.value.trim();
-  if (!question) return;
-  input.value = "";
-  addMessage("user", question);
-
-  const botDiv = addMessage("bot", "");
-  let answerText = "";
-  const sourcesDiv = document.createElement("div");
-  sourcesDiv.className = "sources";
-  botDiv.appendChild(document.createElement("br"));
-
-  const res = await fetch(`${API_BASE}/chat`, {
+/* ------------------------------------------ SSE explanation streaming */
+async function streamSSE(path, body, onEvent) {
+  const res = await fetch(API + path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify(body),
   });
-
+  if (!res.ok) throw new Error(res.statusText);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n\n");
-    buffer = lines.pop();
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const payload = JSON.parse(line.slice(6));
-      if (payload.type === "sources") {
-        sourcesDiv.innerHTML = "<b>Sources</b><br>" + payload.sources
-          .map(s => `<div class="source-item">[${s.index}] ${s.source}: ${s.preview}...</div>`)
-          .join("");
-      } else if (payload.type === "token") {
-        answerText += payload.text;
-        botDiv.textContent = answerText;
-        botDiv.appendChild(sourcesDiv);
-      } else if (payload.type === "error") {
-        botDiv.textContent = payload.text;
-      }
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop();
+    for (const part of parts) {
+      const line = part.split("\n").find((l) => l.startsWith("data: "));
+      if (line) onEvent(JSON.parse(line.slice(6)));
     }
   }
 }
 
-document.getElementById("question").addEventListener("keydown", e => {
-  if (e.key === "Enter") ask();
-});
+function streamExplanation(qid, box) {
+  box.innerHTML = "";
+  const status = el("div", "meta", "Deriving…");
+  const body = el("div", "explanation");
+  const sources = el("div", "sources");
+  box.append(status, body, sources);
+  let raw = "";
+
+  streamSSE("/api/explain/stream", { qid }, (ev) => {
+    if (ev.type === "sources") {
+      if (!ev.sources.length) return;
+      sources.innerHTML = "<b>Grounded in</b>";
+      const ul = el("ul");
+      ev.sources.forEach((s) =>
+        ul.append(el("li", null, `[${s.index}] ${s.source} — ${s.preview}…`)));
+      sources.append(ul);
+    } else if (ev.type === "attempt") {
+      status.textContent = ev.attempt === 1
+        ? "Deriving…" : "Re-deriving against the official answer key…";
+      if (ev.attempt === 2) { raw = ""; body.textContent = ""; }
+    } else if (ev.type === "retry") {
+      raw = "";
+      body.textContent = "";
+    } else if (ev.type === "token") {
+      raw += ev.text;
+      body.textContent = raw;
+    } else if (ev.type === "verdict") {
+      renderLite(body, raw);
+      status.innerHTML = "";
+      const map = {
+        verified:   ["ok",   "Verified against the official answer key"],
+        corrected:  ["ok",   "Verified on the second attempt"],
+        unverified: ["bad",  "NOT verified — treat as a hint, not a solution"],
+        no_key:     ["warn", "No official answer (marks awarded to all)"],
+      };
+      const [cls, label] = map[ev.status] || ["warn", ev.status];
+      status.append(el("span", "badge " + cls, label));
+      if (ev.official_answer) {
+        status.append(el("span", "meta",
+          `derived ${ev.derived_answer || "—"} · official ${ev.official_answer}`));
+      }
+    } else if (ev.type === "error") {
+      status.innerHTML = "";
+      status.append(el("span", "badge bad", "Error"), document.createTextNode(ev.text));
+    }
+  }).catch((e) => { status.textContent = "Failed: " + e.message; });
+}
+
+/* --------------------------------------------------------- practice */
+let score = { answered: 0, correct: 0, marks: 0, possible: 0 };
+
+function recordScore(r) {
+  if (!r.graded) return;
+  score.answered += 1;
+  score.correct += r.correct ? 1 : 0;
+  score.marks += r.marks_awarded;
+  score.possible += r.marks;
+  renderScore();
+}
+
+function renderScore() {
+  $("p-score").innerHTML = "";
+  if (!score.answered) return;
+  const pct = score.possible ? Math.round((score.marks / score.possible) * 100) : 0;
+  [["Answered", `${score.answered}`],
+   ["Correct", `${score.correct}`],
+   ["Marks", `${score.marks.toFixed(2)} / ${score.possible}`],
+   ["Score", `${pct}%`]].forEach(([label, value]) => {
+    const s = el("span", null, label + " ");
+    s.append(el("b", null, value));
+    $("p-score").append(s);
+  });
+}
+
+$("p-start").onclick = async () => {
+  score = { answered: 0, correct: 0, marks: 0, possible: 0 };
+  renderScore();
+  const list = $("p-list");
+  list.innerHTML = "<div class='panel empty'>Loading…</div>";
+  const params = new URLSearchParams({ n: $("p-count").value });
+  if ($("p-subject").value) params.set("subject", $("p-subject").value);
+  if ($("p-topic").value) params.set("topic", $("p-topic").value);
+  if ($("p-type").value) params.set("q_type", $("p-type").value);
+  try {
+    const data = await api("/api/practice?" + params);
+    list.innerHTML = "";
+    if (!data.count) {
+      list.append(el("div", "panel empty", "No questions match those filters."));
+      return;
+    }
+    data.questions.forEach((q) => list.append(renderQuestion(q, { revealed: false })));
+  } catch (e) {
+    list.innerHTML = "";
+    list.append(el("div", "panel empty", "Could not load: " + e.message));
+  }
+};
+
+/* ----------------------------------------------------------- browse */
+$("b-load").onclick = async () => {
+  const list = $("b-list");
+  list.innerHTML = "<div class='panel empty'>Loading…</div>";
+  const params = new URLSearchParams({ limit: 50 });
+  if ($("b-subject").value) params.set("subject", $("b-subject").value);
+  if ($("b-topic").value) params.set("topic", $("b-topic").value);
+  try {
+    const data = await api("/api/questions?" + params);
+    list.innerHTML = "";
+    if (!data.count) {
+      list.append(el("div", "panel empty", "Nothing matches those filters."));
+      return;
+    }
+    data.questions.forEach((q) => list.append(renderQuestion(q, { revealed: true })));
+  } catch (e) {
+    list.innerHTML = "";
+    list.append(el("div", "panel empty", "Could not load: " + e.message));
+  }
+};
+
+/* -------------------------------------------------------------- ask */
+async function ask() {
+  const input = $("a-input");
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = "";
+  const chat = $("a-chat");
+  chat.append(el("div", "msg user", question));
+
+  const wrapper = el("div", "panel");
+  const body = el("div", "msg bot", "");
+  const sources = el("div", "sources");
+  wrapper.append(body, sources);
+  chat.append(wrapper);
+  wrapper.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  let raw = "";
+  try {
+    await streamSSE("/api/chat", { question }, (ev) => {
+      if (ev.type === "sources" && ev.sources.length) {
+        sources.innerHTML = "<b>Sources</b>";
+        const ul = el("ul");
+        ev.sources.forEach((s) => {
+          const kind = s.kind === "question" ? "past question" : "notes";
+          ul.append(el("li", null, `[${s.index}] (${kind}) ${s.source} — ${s.preview}…`));
+        });
+        sources.append(ul);
+      } else if (ev.type === "low_confidence") {
+        sources.textContent = "Nothing in the corpus passed the relevance threshold.";
+      } else if (ev.type === "token") {
+        raw += ev.text;
+        body.textContent = raw;
+      }
+    });
+    renderLite(body, raw);
+  } catch (e) {
+    body.textContent = "Failed: " + e.message;
+  }
+}
+$("a-send").onclick = ask;
+$("a-input").addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
+
+/* -------------------------------------------------------- analytics */
+async function loadAnalytics() {
+  const box = $("an-table");
+  box.innerHTML = "<div class='empty'>Loading…</div>";
+  const params = new URLSearchParams();
+  if ($("an-subject").value) params.set("subject", $("an-subject").value);
+  try {
+    const data = await api("/api/topics?" + params);
+    if (!data.topics.length) { box.innerHTML = "<div class='empty'>No data.</div>"; return; }
+    const max = Math.max(...data.topics.map((t) => t.marks_share));
+    box.innerHTML = "";
+    const table = el("table");
+    table.innerHTML =
+      "<thead><tr><th>Topic</th><th class='num'>Questions</th>" +
+      "<th class='num'>Marks</th><th style='width:34%'>Share of marks</th></tr></thead>";
+    const tbody = el("tbody");
+    data.topics.forEach((t) => {
+      const tr = el("tr");
+      tr.append(el("td", null, t.topic));
+      tr.append(el("td", "num", String(t.questions)));
+      tr.append(el("td", "num", String(t.marks)));
+      const cell = el("td");
+      const bar = el("div", "bar");
+      const fill = el("span");
+      fill.style.width = (max ? (t.marks_share / max) * 100 : 0) + "%";
+      bar.append(fill);
+      cell.append(bar, el("div", "meta", t.marks_share + "%"));
+      tr.append(cell);
+      tbody.append(tr);
+    });
+    table.append(tbody);
+    box.append(table);
+  } catch (e) {
+    box.innerHTML = "<div class='empty'>Could not load: " + e.message + "</div>";
+  }
+}
+$("an-subject").onchange = loadAnalytics;
+
+loadStatus();
 </script>
 </body>
 </html>

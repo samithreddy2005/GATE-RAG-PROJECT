@@ -14,3 +14,9 @@ __pycache__/
 # Local index / vector store artifacts
 rag-project/storage/
 rag-project/data/uploaded/
+
+# Evaluation output (regenerate with `python -m eval.run_eval`)
+rag-project/eval/results.json
+
+# Test / tooling caches
+.pytest_cache/

@@ -1,58 +1,89 @@
 # GATE-RAG-PROJECT
 
-A retrieval-augmented assistant for **GATE Data Science & AI (DA)** exam prep,
-built around official question papers and answer keys as verifiable ground truth.
+A retrieval-augmented study assistant for **GATE** exam preparation, built
+around official past papers and their answer keys.
 
-Unlike a generic "chat with your PDFs" demo, this project is built on a dataset
-with real answer keys — which forces the harder engineering problems: structured
-extraction from inconsistent PDFs, subject-agnostic parsing, and verifying that a
-generated explanation actually reaches the correct answer before a student sees it.
+Students preparing for GATE want past questions to practise on and
+explanations they can actually follow. Plenty of tools will generate an
+explanation. The problem is that a fluent, confident, *wrong* derivation is
+worse than no answer at all — a student who memorizes a bad method carries it
+into the exam.
 
-Full design notes, architecture, and project status: **[rag-project/README.md](rag-project/README.md)**
+So this project treats the **official answer key as ground truth**. Every
+generated explanation is parsed for the answer it arrived at and compared
+against the key by a deterministic check that no language model takes part in.
+If they disagree, the system retries once with the key as a constraint. If
+they still disagree, the student sees the derivation with an explicit
+**"not verified"** warning rather than a false badge of correctness.
+
+Full design notes, measured results and limitations:
+**[rag-project/README.md](rag-project/README.md)**
 
 ## Quickstart
 
-Requires **Python 3.12** (3.14 has no wheels for several dependencies).
+Requires **Python 3.12**.
 
 ```bash
 cd rag-project
 python -m venv venv
-venv\Scripts\activate          # Windows;  source venv/bin/activate on macOS/Linux
+venv\Scripts\activate            # Windows;  source venv/bin/activate elsewhere
 pip install -r requirements.txt
-```
-
-Add your API key:
-
-```bash
-cp .env.example .env           # then edit .env and paste your key
-```
-
-Get a free key at [console.groq.com/keys](https://console.groq.com/keys).
-
-Run it:
-
-```bash
+cp .env.example .env             # then paste a key from console.groq.com/keys
 python -m uvicorn app.main:app --port 8000 --reload
 ```
 
-Open **http://127.0.0.1:8000/** — the API serves the UI, and the corpus in
-`data/` is indexed automatically at startup.
+Open **http://127.0.0.1:8000/**.
 
-## What's here
+Practice, browsing, grading and search all work **without** an API key — only
+the generated explanations need one.
+
+## What it does
+
+- **Practice mode** — random question sets filtered by subject, topic or type.
+  The official answer is never sent to the browser until you submit, and
+  grading uses GATE's own marking rules (negative marking on MCQ only).
+- **Verified explanations** — step-by-step derivations grounded in a concept
+  knowledge base, streamed live, each one checked against the official key
+  and badged verified / corrected-on-retry / **not verified**.
+- **Ask a doubt** — free-form Q&A grounded in the indexed papers and notes,
+  which returns *nothing* rather than improvising when the corpus does not
+  cover the question.
+- **Analytics** — which topics carry the most marks across past papers, which
+  is the question a student actually has when deciding what to revise.
+
+## Measured, not claimed
+
+| | |
+|---|---|
+| Retrieval recall@1 (20 hand-authored student queries) | 87.5% |
+| Off-topic queries correctly refused | 100% |
+| Explanations verified against the official key | 75.0% |
+| Tests | 102 passing |
+
+Reproduce with `python -m pytest` and `python -m eval.run_eval --all`.
+Method, caveats and what these numbers do *not* cover are in the
+[project README](rag-project/README.md).
+
+## Layout
 
 | Path | |
 |---|---|
-| `app/main.py` | FastAPI server — `/chat` (streaming, with citations), `/ingest`, `/status` |
-| `app/retriever.py` | Hybrid retrieval: BM25 + vector search fused with RRF |
-| `app/gate_parser.py` | Subject-agnostic GATE paper parser (MCQ/MSQ/NAT, topic tagging) |
-| `app/gate_generator.py` | Explanation generation verified against the official answer key |
-| `app/question_bank.py` | SQLite question store with metadata filtering and analytics |
-| `data/raw_papers/` | Official GATE DA 2024 and CS 2023 papers + answer keys |
+| [`app/gate_parser.py`](rag-project/app/gate_parser.py) | Subject-agnostic paper parser (MCQ/MSQ/NAT, topic tagging) |
+| [`app/question_bank.py`](rag-project/app/question_bank.py) | SQLite store, metadata filters, marks-weighted analytics |
+| [`app/build_index.py`](rag-project/app/build_index.py) | Corpus builder + answer-key integrity validation |
+| [`app/retriever.py`](rag-project/app/retriever.py) | Hybrid BM25 + vector retrieval with RRF and abstention |
+| [`app/gate_generator.py`](rag-project/app/gate_generator.py) | Explanation generation with answer-key verification |
+| [`app/main.py`](rag-project/app/main.py) | FastAPI server and streaming endpoints |
+| [`data/concepts/`](rag-project/data/concepts/) | Concept notes that ground the *why* |
+| [`eval/run_eval.py`](rag-project/eval/run_eval.py) | Retrieval and generation benchmarks |
+| [`tests/`](rag-project/tests/) | 102 tests |
 
 ## Notes
 
-- Generation runs on [Groq](https://groq.com) (`openai/gpt-oss-120b` by default).
-  Change the model with `GENERATION_MODEL` in `.env`.
+- Generation runs on [Groq](https://groq.com) (`openai/gpt-oss-120b` by
+  default); change it with `GENERATION_MODEL` in `.env`.
 - `.env` is gitignored — never commit your API key.
-- GATE question papers included here are the property of their respective
-  organizing institutes (IISc / IITs) and are used for educational purposes.
+- The included papers are a **partial** extraction, not complete papers;
+  `python -m app.build_index` prints the exact coverage gap on every run.
+- GATE question papers are the property of their organizing institutes
+  (IISc / the IITs) and are used here for educational purposes.

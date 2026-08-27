@@ -19,8 +19,10 @@ from __future__ import annotations
 
 import csv
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
+
+from app.config import UNANSWERABLE_KEYS
 
 Q_START_RE = re.compile(r"(?m)^Q\.(\d+)\b")
 MARKS_BANNER_RE = re.compile(
@@ -41,14 +43,23 @@ NOISE_LINE_RES = [
 TOPIC_KEYWORDS_CS = {
     "Data Structures": ["heap", "linked list", "stack", "queue", "array", "tree", "binary tree"],
     "Algorithms": ["time complexity", "worst-case", "recurrence", "sorting", "greedy", "dynamic programming", "o(", "θ(", "ω("],
-    "DBMS": ["relation", "sql", "select", "primary key", "schema", "database", "tuple", "index file"],
+    # "relation" alone is NOT a DBMS keyword: it matches "recurrence
+    # relation", which mistagged a Lucas-sequence algorithms question as
+    # DBMS. Every entry here must be unambiguous within an exam paper.
+    "DBMS": ["relational", "sql", "select", "primary key", "foreign key", "schema",
+             "database", "tuple", "index file", "normalization"],
     "Operating Systems": ["thread", "process", "scheduling", "semaphore", "page fault", "context switch", "deadlock", "page table"],
     "Computer Networks": ["tcp", "dns", "http", "router", "subnet", "routing", "rtt", "ospf", "ip address"],
     "Theory of Computation": ["dfa", "nfa", "regular expression", "pushdown automaton", "context-free", "turing", "finite-state"],
     "Compiler Design": ["lexical", "parser", "grammar", "front-end", "back-end", "syntax directed", "activation tree"],
     "Digital Logic": ["multiplexer", "flip-flop", "boolean", "logic gate", "cache", "adder"],
     "Computer Organization": ["pipeline", "cache", "memory", "instruction", "assembly", "addressing", "ieee-754"],
-    "Discrete Mathematics": ["graph", "eigenvalue", "permutation", "set", "function", "group", "probability", "bfs"],
+    # "function" and bare "set" are excluded deliberately -- they occur in
+    # ordinary exam prose ("let f be a function", "a set of instructions")
+    # far more often than as discrete-maths signals.
+    "Discrete Mathematics": ["graph", "eigenvalue", "permutation", "powerset", "bijection",
+                             "cardinality", "pigeonhole", "combinatorics", "group theory",
+                             "probability", "bfs", "recurrence relation"],
     "Programming & C": ["printf", "int main", "struct", "pointer", "recursion", "c program"],
     "General Aptitude": [],  # fallback bucket, matched by subject code GA
 }
@@ -60,7 +71,13 @@ TOPIC_KEYWORDS_CS = {
 TOPIC_KEYWORDS_DA = {
     "Probability & Statistics": ["probability", "random variable", "distribution", "variance", "expectation",
                                   "covariance", "mean", "standard deviation", "bayes", "poisson", "normal",
-                                  "z-score", "independent", "conditional"],
+                                  "z-score", "independent", "conditional",
+                                  # Elementary-probability vocabulary. Without these a
+                                  # plain "fair six-sided die" question fell through to
+                                  # Uncategorized despite being pure probability.
+                                  "die", "dice", "coin", "tossed", "fair six-sided",
+                                  "expected value", "sample space", "uniformly distributed",
+                                  "cumulative distribution", "median", "quartile"],
     "Linear Algebra": ["matrix", "eigenvalue", "eigenvector", "determinant", "vector", "subspace",
                         "null space", "rank", "singular value", "trace"],
     "Calculus & Optimization": ["derivative", "limit", "differentiable", "local minimum", "local maximum",
@@ -68,7 +85,7 @@ TOPIC_KEYWORDS_DA = {
     "Programming": ["python", "def ", "for i", "code", "function(", "recursion", "pseudocode", "int func"],
     "Data Structures & Algorithms": ["stack", "queue", "sort", "binary search", "hash", "tree", "graph",
                                       "dfs", "bfs", "complexity", "quicksort", "linked list", "swap"],
-    "DBMS & Data Warehousing": ["relation", "sql", "select", "schema", "functional dependenc", "foreign key",
+    "DBMS & Data Warehousing": ["relational", "sql", "select", "schema", "functional dependenc", "foreign key",
                                  "index", "database", "b+ tree", "normalization", "relational algebra"],
     "Machine Learning": ["classifier", "regression", "svm", "k-means", "clustering", "naive bayes",
                           "neural network", "overfitting", "cross validation", "decision tree", "knn",
@@ -91,10 +108,39 @@ class GateQuestion:
     options: dict[str, str] = field(default_factory=dict)
     official_answer: str = ""
     topics: list[str] = field(default_factory=list)
+    # Paper section as published in the answer key: "GA" for the General
+    # Aptitude block every GATE paper opens with, otherwise the subject
+    # code. Keeping it separate from `subject` matters because GA questions
+    # share none of the subject taxonomy and would otherwise all fall
+    # through to "Uncategorized".
+    section: str = ""
+
+    @property
+    def qid(self) -> str:
+        """Stable identifier shared by the SQLite bank and the vector store,
+        so a retrieval hit can be resolved back to its structured record."""
+        return f"{self.subject}-{self.year}-{self.q_no}"
+
+    @property
+    def is_answerable(self) -> bool:
+        """False for questions GATE dropped (answer key "MTA" = Marks To
+        All) or that have no key in our data. These must be excluded from
+        verification and from evaluation metrics -- there is no correct
+        answer to verify against, so counting them as failures would
+        understate the system's real accuracy."""
+        return self.official_answer.strip().upper() not in UNANSWERABLE_KEYS
 
     def to_chunk_text(self) -> str:
-        """Flattened text used for embedding / BM25 indexing."""
-        parts = [self.stem]
+        """Flattened text used for embedding / BM25 indexing. The header
+        line is deliberately included so lexical search can match on
+        "GATE DA 2024" or the question type the way a student would ask."""
+        parts = [
+            f"GATE {self.subject} {self.year} Q.{self.q_no} "
+            f"({self.q_type}, {self.marks} mark(s))"
+        ]
+        if self.topics:
+            parts.append("Topics: " + ", ".join(self.topics))
+        parts.append(self.stem)
         for letter, text in self.options.items():
             parts.append(f"({letter}) {text}")
         return "\n".join(parts)
@@ -178,22 +224,39 @@ def _looks_like_msq(stem: str) -> bool:
     return bool(re.search(r"one or more|which of the following.+is/are", stem, re.IGNORECASE))
 
 
+def normalize_answer_key(raw: str) -> str:
+    """The two official keys in this corpus disagree on MSQ delimiters --
+    the CS key writes "A,B", the DA key writes "A;B". Normalizing at
+    ingestion means every downstream comparison sees one format."""
+    return re.sub(r"\s*[;,]\s*", ",", raw.strip()).upper()
+
+
 def attach_answer_keys(questions: list[GateQuestion], answer_key_csv: Path) -> None:
     answers: dict[int, str] = {}
     types: dict[int, str] = {}
+    sections: dict[int, str] = {}
+    marks: dict[int, int] = {}
     with open(answer_key_csv, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             q_no = int(row["q_no"])
-            answers[q_no] = row["key"]
+            answers[q_no] = normalize_answer_key(row["key"])
             if row.get("type"):
-                types[q_no] = row["type"]
+                types[q_no] = row["type"].strip().upper()
+            if row.get("subject"):
+                sections[q_no] = row["subject"].strip().upper()
+            if row.get("marks"):
+                marks[q_no] = int(row["marks"])
     for q in questions:
         q.official_answer = answers.get(q.q_no, "")
-        # Answer key type is authoritative -- overrides the text-based
-        # heuristic guess, since phrasing like "one or more" doesn't
-        # always mean the official type is MSQ.
+        q.section = sections.get(q.q_no, q.subject)
+        # The answer key is authoritative for both type and marks -- it
+        # overrides the text heuristics, since phrasing like "one or more"
+        # does not always mean the official type is MSQ, and the marks
+        # banner can be lost to a page break.
         if q.q_no in types:
             q.q_type = types[q.q_no]
+        if q.q_no in marks:
+            q.marks = marks[q.q_no]
 
 
 SUBJECT_TAXONOMIES = {
@@ -215,8 +278,17 @@ def tag_topics(questions: list[GateQuestion], keyword_map: dict[str, list[str]] 
     non-word character.
     """
     for q in questions:
+        # Every GATE paper opens with a General Aptitude block that shares
+        # no vocabulary with the subject syllabus. The answer key labels
+        # those rows "GA", and that label is ground truth -- far more
+        # reliable than trying to keyword-match verbal reasoning, so it
+        # short-circuits the taxonomy entirely.
+        if q.section == "GA":
+            q.topics = ["General Aptitude"]
+            continue
+
         active_map = keyword_map or SUBJECT_TAXONOMIES.get(q.subject, TOPIC_KEYWORDS_CS)
-        text_lower = q.stem.lower()
+        text_lower = q.to_chunk_text().lower()
         matched = []
         for topic, keywords in active_map.items():
             for kw in keywords:

@@ -1,0 +1,125 @@
+{
+  "_comment": [
+    "Hand-authored benchmark. Each query is phrased the way a student would",
+    "actually search -- from memory, using syllabus vocabulary -- and",
+    "deliberately shares as little wording as possible with the question stem.",
+    "That is the whole point: a benchmark built by feeding the question's own",
+    "text back to the retriever measures string matching, not retrieval, and",
+    "will report a meaningless 100%.",
+    "",
+    "expect_qid  : the past question that should be found (may be null for a",
+    "              pure concept query).",
+    "expect_kind : 'question', 'concept', or 'both' -- what the query should",
+    "              surface. 'both' is the interesting case: the exam question",
+    "              AND the theory that explains it."
+  ],
+  "queries": [
+    {
+      "query": "how do I tell if the eigenvalues of a matrix are complex without solving the characteristic equation",
+      "expect_qid": "DA-2024-13",
+      "expect_kind": "both"
+    },
+    {
+      "query": "chance of getting exactly two girls in a three child family",
+      "expect_qid": "DA-2024-7",
+      "expect_kind": "both"
+    },
+    {
+      "query": "is the sum of two admissible heuristics still admissible for A star",
+      "expect_qid": "DA-2024-23",
+      "expect_kind": "both"
+    },
+    {
+      "query": "which points decide the boundary of a hard margin support vector machine",
+      "expect_qid": "DA-2024-17",
+      "expect_kind": "both"
+    },
+    {
+      "query": "second derivative positive at a stationary point means what kind of extremum",
+      "expect_qid": "DA-2024-15",
+      "expect_kind": "both"
+    },
+    {
+      "query": "are the mean and variance of a Poisson distribution the same value",
+      "expect_qid": "DA-2024-11",
+      "expect_kind": "both"
+    },
+    {
+      "query": "worst case number of swaps in an in place quicksort partition",
+      "expect_qid": "DA-2024-30",
+      "expect_kind": "both"
+    },
+    {
+      "query": "finding candidate keys from a set of functional dependencies",
+      "expect_qid": "DA-2024-46",
+      "expect_kind": "both"
+    },
+    {
+      "query": "computing a joint probability from a bayesian network with bernoulli nodes",
+      "expect_qid": "DA-2024-64",
+      "expect_kind": "both"
+    },
+    {
+      "query": "rolling a fair six sided die repeatedly until something happens",
+      "expect_qid": "DA-2024-36",
+      "expect_kind": "question"
+    },
+    {
+      "query": "depth first traversal ordering on an undirected unweighted graph",
+      "expect_qid": "DA-2024-14",
+      "expect_kind": "both"
+    },
+    {
+      "query": "maximum comparisons when searching a sorted array by halving",
+      "expect_qid": "DA-2024-40",
+      "expect_kind": "both"
+    },
+    {
+      "query": "what does arity or degree of a relation mean in relational algebra",
+      "expect_qid": "CS-2023-15",
+      "expect_kind": "both"
+    },
+    {
+      "query": "which array arrangement satisfies the max heap property",
+      "expect_qid": "CS-2023-11",
+      "expect_kind": "both"
+    },
+    {
+      "query": "what must be saved when switching between threads of the same process",
+      "expect_qid": "CS-2023-21",
+      "expect_kind": "question"
+    },
+    {
+      "query": "deleting a node from a singly linked list given only a pointer to it",
+      "expect_qid": "CS-2023-12",
+      "expect_kind": "question"
+    },
+    {
+      "query": "explain the bias variance tradeoff and why validation error is u shaped",
+      "expect_qid": null,
+      "expect_kind": "concept"
+    },
+    {
+      "query": "difference between BCNF and third normal form",
+      "expect_qid": null,
+      "expect_kind": "concept"
+    },
+    {
+      "query": "why does alpha beta pruning not change the minimax result",
+      "expect_qid": null,
+      "expect_kind": "concept"
+    },
+    {
+      "query": "when is every local minimum also a global minimum",
+      "expect_qid": null,
+      "expect_kind": "concept"
+    }
+  ],
+  "off_topic": [
+    "what is the capital of France",
+    "who won the football world cup",
+    "recipe for chocolate cake",
+    "zzzqqqx nonexistent gibberish token",
+    "best places to visit in Kerala during monsoon"
+  ]
+}
